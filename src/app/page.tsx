@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowRight, BadgeCheck, BriefcaseBusiness, Check, ChevronDown, LockKeyhole, ShieldAlert, Star, Target, Ticket, Users, Wallet,
+  ArrowRight, BadgeCheck, Check, ChevronDown, ShieldAlert, Sparkles, Star, Target, Ticket, Users, Wallet,
 } from "lucide-react";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -46,32 +46,28 @@ export default async function Home() {
               </span>
               .
             </h1>
-            <p className="mt-7 max-w-lg text-lg text-white/70">
-              Students and talent meet verified event hosts. Every member is NIN-checked and every naira sits in escrow until the job is done.
-            </p>
-
-            <div className="mt-9 grid gap-3 sm:grid-cols-2">
-              <Link href="/register/talent" className="cta-tile group bg-vermilion-600 text-white shadow-(--shadow-cta) hover:bg-vermilion-700">
-                <span className="cta-tile-icon bg-white/15"><BriefcaseBusiness className="size-5" /></span>
-                <span className="flex-1">
-                  <span className="block font-bold">Student / Talent</span>
-                  <span className="block text-[13px] text-white/80">Find paid shifts near you</span>
-                </span>
-                <ArrowRight className="size-5 transition group-hover:translate-x-0.5" />
+            <div className="mt-10 flex flex-wrap items-center gap-3">
+              <Link
+                href="/register/talent"
+                className="group inline-flex h-[60px] items-center gap-3 rounded-full bg-vermilion-600 py-2 pr-6 pl-2 text-[17px] font-bold text-white shadow-(--shadow-cta) ring-1 ring-white/20 transition hover:-translate-y-0.5 hover:bg-vermilion-700 active:translate-y-0"
+              >
+                <span className="grid size-11 place-items-center rounded-full bg-white/15 ring-1 ring-white/25"><Sparkles className="size-5" aria-hidden /></span>
+                Talent
+                <ArrowRight className="size-5 transition group-hover:translate-x-1" aria-hidden />
               </Link>
-              <Link href="/register/host" className="cta-tile group border border-white/20 bg-white/[0.07] text-white backdrop-blur-md hover:bg-white hover:text-ink">
-                <span className="cta-tile-icon bg-white/10 group-hover:bg-ice"><Users className="size-5" /></span>
-                <span className="flex-1">
-                  <span className="block font-bold">Event Host</span>
-                  <span className="block text-[13px] opacity-75">Hire verified staff fast</span>
-                </span>
-                <ArrowRight className="size-5 transition group-hover:translate-x-0.5" />
+              <Link
+                href="/register/host"
+                className="group inline-flex h-[60px] items-center gap-3 rounded-full border border-white/25 bg-white/[0.08] py-2 pr-6 pl-2 text-[17px] font-bold text-white backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white hover:text-ink active:translate-y-0"
+              >
+                <span className="grid size-11 place-items-center rounded-full bg-white/10 ring-1 ring-white/20 transition group-hover:bg-ink group-hover:text-white"><Users className="size-5" aria-hidden /></span>
+                Host
+                <ArrowRight className="size-5 transition group-hover:translate-x-1" aria-hidden />
               </Link>
             </div>
 
-            <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/70">
-              {["NIN, selfie & liveness checks", "Escrow on every booking", "SOS on every shift"].map((t) => (
-                <li key={t} className="flex items-center gap-2"><Check className="size-4 text-vermilion" aria-hidden /> {t}</li>
+            <ul className="mt-8 flex flex-wrap gap-2 text-[13px] font-semibold text-white/80">
+              {["NIN-verified", "Escrow pay", "SOS on every shift"].map((t) => (
+                <li key={t} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 backdrop-blur"><Check className="size-3.5 text-vermilion" aria-hidden /> {t}</li>
               ))}
             </ul>
           </div>
@@ -155,8 +151,8 @@ export default async function Home() {
           </div>
 
           <div className="mt-12 grid gap-5 md:grid-cols-6">
-            <Bento className="md:col-span-4" icon={<BadgeCheck className="size-5" />} title="Everyone is verified before the first shift." body="Talent pass NIN, selfie and liveness checks. Hosts are checked too, and registered businesses add their CAC number.">
-              <ul className="mt-6 grid gap-2 sm:grid-cols-2">
+            <Bento className="md:col-span-6" icon={<BadgeCheck className="size-5" />} title="Everyone is verified before the first shift." body="Talent pass NIN, selfie and liveness checks. Hosts are checked too, and registered businesses add their CAC number.">
+              <ul className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 {[["NIN matched", "NIMC"], ["Selfie matched to ID", "98% match"], ["Liveness passed", "2 sec"], ["CAC confirmed for hosts", "RC 1234567"]].map(([a, b]) => (
                   <li key={a} className="flex items-center gap-3 rounded-xl border border-line-soft bg-ice-25 px-3 py-2.5 text-sm">
                     <span className="grid size-6 place-items-center rounded-full bg-ink text-white"><Check className="size-3.5" /></span>
@@ -165,17 +161,6 @@ export default async function Home() {
                   </li>
                 ))}
               </ul>
-            </Bento>
-
-            <Bento className="md:col-span-2" dark icon={<LockKeyhole className="size-5" />} title="Pay is held before you arrive." body="Hosts fund pay when they book. It’s released when both sides confirm — or automatically after 12 hours.">
-              <ol className="mt-6 flex items-center gap-2 text-xs font-bold">
-                {["Booked · held", "Event day", "Released"].map((s, i) => (
-                  <li key={s} className="flex flex-1 flex-col items-center gap-2 text-center">
-                    <span className={`grid size-8 place-items-center rounded-full ${i === 2 ? "bg-vermilion text-white" : "bg-white/10 text-white"}`}>{i + 1}</span>
-                    <span className="text-white/70">{s}</span>
-                  </li>
-                ))}
-              </ol>
             </Bento>
 
             <Bento className="md:col-span-2" icon={<Target className="size-5" />} title="20 free bids a month." body="Each bid costs 3 points, so hosts see serious applicants.">

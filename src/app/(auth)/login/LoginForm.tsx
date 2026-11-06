@@ -49,11 +49,11 @@ export function LoginForm({ next, initialSide }: { next: string; initialSide: "t
   const [side, setSide] = useState<"talent" | "host">(initialSide);
   return (
     <>
-      <div role="tablist" aria-label="Account type" className="mb-6 grid grid-cols-2 rounded-2xl border border-line bg-ice-50 p-1">
+      <div role="tablist" aria-label="Account type" className="mb-6 grid grid-cols-2 rounded-full border border-white/70 bg-ice-100/70 p-1 shadow-inner backdrop-blur">
         {(
           [
-            ["talent", "Student / Talent"],
-            ["host", "Event Host"],
+            ["talent", "Talent"],
+            ["host", "Host"],
           ] as const
         ).map(([v, label]) => (
           <button
@@ -62,8 +62,8 @@ export function LoginForm({ next, initialSide }: { next: string; initialSide: "t
             role="tab"
             aria-selected={side === v}
             onClick={() => setSide(v)}
-            className={`min-h-11 rounded-xl text-sm font-bold transition ${
-              side === v ? "bg-white text-ink shadow-[0_1px_3px_rgb(14_26_43/0.12)]" : "text-ink-500 hover:text-ink"
+            className={`min-h-10 rounded-full text-sm font-bold transition ${
+              side === v ? "bg-ink text-white shadow-[0_6px_16px_-6px_rgb(14_26_43/0.6)]" : "text-ink-500 hover:text-ink"
             }`}
           >
             {label}
@@ -97,9 +97,9 @@ export function LoginForm({ next, initialSide }: { next: string; initialSide: "t
 
       <p className="mt-7 text-center text-sm text-ink-500">
         New to ModelClic?{" "}
-        <Link href="/register/talent" className="font-bold text-ink hover:text-vermilion-700">Register as Student</Link>
-        <span className="mx-1.5 text-ink-200">·</span>
-        <Link href="/register/host" className="font-bold text-ink hover:text-vermilion-700">Register as Event Host</Link>
+        <Link href={side === "host" ? "/register/host" : "/register/talent"} className="font-bold text-ink hover:text-vermilion-700">
+          Join as {side === "host" ? "Host" : "Talent"}
+        </Link>
       </p>
     </>
   );

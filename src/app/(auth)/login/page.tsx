@@ -14,8 +14,8 @@ export default async function LoginPage({
 }) {
   const { next, side, error } = await searchParams;
   return (
-    <AuthShell>
-      <h1 className="t-display text-[40px]">Welcome back</h1>
+    <AuthShell tab="login">
+      <h1 className="text-[32px] font-extrabold tracking-[-0.045em]">Welcome back</h1>
       <p className="mt-1.5 mb-7 text-ink-500">Log in to keep working or hiring.</p>
       {error && (
         <p role="alert" className="mb-5 rounded-xl bg-vermilion-50 px-4 py-3 text-sm font-medium text-vermilion-700">

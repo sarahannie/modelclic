@@ -4,7 +4,7 @@ import { SUPPORT_EMAIL } from "@/lib/constants";
 
 const cols = [
   { title: "Product", links: [["How it works", "/#how"], ["Safety", "/#why"], ["Jobs", "/jobs"], ["FAQ", "/#faq"]] },
-  { title: "Get started", links: [["Join as talent", "/register/talent"], ["Hire staff", "/register/host"], ["Log in", "/login"], ["Staff login", "/staff"]] },
+  { title: "Get started", links: [["Join as talent", "/register/talent"], ["Hire staff", "/register/host"], ["Log in", "/login"]] },
   { title: "Legal", links: [["Terms", "/legal/terms"], ["Privacy", "/legal/privacy"], ["Community Guidelines", "/legal/guidelines"]] },
 ];
 

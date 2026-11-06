@@ -11,7 +11,7 @@ export default function ResetPassword() {
   return (
     <AuthShell back={{ href: "/login", label: "Back to login" }}>
       <p className="eyebrow">Step 2 of 2 — New password</p>
-      <h1 className="mt-2 text-[34px] font-extrabold tracking-[-0.045em]">Choose a new password</h1>
+      <h1 className="mt-2 text-[28px] font-extrabold tracking-[-0.045em]">Choose a new password</h1>
       <p className="mt-1.5 mb-7 text-ink-500">At least 8 characters. You&rsquo;ll be logged in straight after.</p>
       <ActionForm action={resetPassword} className="space-y-4">
         <div><label htmlFor="password" className="label">New password</label><PasswordInput autoComplete="new-password" /></div>
