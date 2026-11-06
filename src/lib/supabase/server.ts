@@ -1,10 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./env";
+import { DEMO_COOKIE, SUPABASE_ANON_KEY, SUPABASE_URL, demoMode } from "./env";
+import { createDemoClient } from "../demo/client";
+import type { Role } from "../types";
 
-export async function createClient() {
+export async function createClient(): Promise<SupabaseClient> {
   const cookieStore = await cookies();
-  return createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  if (demoMode) {
+    const r = cookieStore.get(DEMO_COOKIE)?.value as Role | undefined;
+    return createDemoClient(r && ["admin", "host", "talent"].includes(r) ? r : null) as unknown as SupabaseClient;
+  }
+  return createServerClient(SUPABASE_URL || "http://localhost", SUPABASE_ANON_KEY || "anon", {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -13,7 +20,7 @@ export async function createClient() {
         try {
           cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
         } catch {
-          // Called from a Server Component — middleware refreshes the session instead.
+          // Server Component — middleware refreshes the session.
         }
       },
     },

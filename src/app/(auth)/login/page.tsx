@@ -1,22 +1,34 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
+import { AuthShell } from "../AuthShell";
 import { LoginForm } from "./LoginForm";
+import { demoMode } from "@/lib/supabase/env";
 
 export const metadata: Metadata = { title: "Log in" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  const { next } = await searchParams;
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string; side?: string; error?: string }>;
+}) {
+  const { next, side, error } = await searchParams;
   return (
-    <>
-      <h1 className="text-4xl font-medium">Welcome back</h1>
-      <p className="mt-2 mb-8 text-ink-500">Log in to keep working or hiring.</p>
-      <LoginForm next={next ?? "/dashboard"} />
-      <p className="mt-8 text-center text-sm text-ink-500">
-        New here?{" "}
-        <Link href="/signup" className="font-semibold text-ink underline decoration-vermilion underline-offset-4">
-          Create an account
+    <AuthShell>
+      <h1 className="t-display text-[40px]">Welcome back</h1>
+      <p className="mt-1.5 mb-7 text-ink-500">Log in to keep working or hiring.</p>
+      {error && (
+        <p role="alert" className="mb-5 rounded-xl bg-vermilion-50 px-4 py-3 text-sm font-medium text-vermilion-700">
+          {error === "google" ? "Google sign-in didn't complete. Please try again." : "That link has expired. Please log in again."}
+        </p>
+      )}
+      {demoMode && (
+        <Link href="/demo" className="mb-6 flex items-center gap-3 rounded-2xl border border-dashed border-ice-400 bg-ice-50 px-4 py-3 text-sm hover:border-ink">
+          <Sparkles className="size-4 text-vermilion-700" aria-hidden />
+          <span><strong>Demo mode.</strong> Explore as talent, host or admin with sample data →</span>
         </Link>
-      </p>
-    </>
+      )}
+      <LoginForm next={next ?? "/app"} initialSide={side === "host" ? "host" : "talent"} />
+    </AuthShell>
   );
 }

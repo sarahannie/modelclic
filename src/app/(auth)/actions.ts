@@ -1,52 +1,161 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { supabaseConfigured } from "@/lib/supabase/env";
+import { DEMO_COOKIE, demoMode } from "@/lib/supabase/env";
+import { homeFor } from "@/lib/session";
+import type { ActionResult } from "@/app/actions/rpc";
+import type { Role } from "@/lib/types";
 
-export type FormState = { error?: string } | undefined;
+const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 
-const NOT_READY = "Sign-in isn't switched on yet. Please try again soon.";
-
-export async function login(_: FormState, formData: FormData): Promise<FormState> {
-  if (!supabaseConfigured) return { error: NOT_READY };
-  const email = String(formData.get("email") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-  const next = String(formData.get("next") ?? "/dashboard");
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: "That email and password don't match." };
-
-  redirect(next.startsWith("/") ? next : "/dashboard");
+async function origin() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  const h = await headers();
+  return `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
 }
 
-export async function signup(_: FormState, formData: FormData): Promise<FormState> {
-  if (!supabaseConfigured) return { error: NOT_READY };
-  const role = formData.get("role") === "host" ? "host" : "talent";
-  const full_name = String(formData.get("full_name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
-  const phone = String(formData.get("phone") ?? "").trim();
-  const city = String(formData.get("city") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
+const safeNext = (n: string) => (n.startsWith("/") && !n.startsWith("//") ? n : "/app");
 
-  if (full_name.length < 2) return { error: "Please enter your full name." };
-  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+/* ── Demo mode ─────────────────────────────────────────────────── */
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? `https://${(await headers()).get("host")}`;
+export async function enterDemo(fd: FormData) {
+  if (!demoMode) redirect("/login");
+  const role = (["talent", "host", "admin"].includes(s(fd, "role")) ? s(fd, "role") : "talent") as Role;
+  (await cookies()).set(DEMO_COOKIE, role, { path: "/", httpOnly: true, sameSite: "lax", maxAge: 60 * 60 * 24 });
+  redirect(homeFor(role));
+}
+
+/* ── Email + password ──────────────────────────────────────────── */
+
+export async function login(_: ActionResult | undefined, fd: FormData): Promise<ActionResult> {
+  if (demoMode) {
+    (await cookies()).set(DEMO_COOKIE, s(fd, "side") === "host" ? "host" : "talent", { path: "/", httpOnly: true, sameSite: "lax" });
+    redirect(s(fd, "side") === "host" ? "/host" : "/talent");
+  }
   const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email: s(fd, "email"), password: String(fd.get("password") ?? "") });
+  if (error || !data.user) return { ok: false, error: "That email and password don't match." };
+
+  // Logged in on the other tab? Switch side if the account has it.
+  const side = s(fd, "side") as Role;
+  const { data: p } = await supabase.from("profiles").select("role, sides").eq("id", data.user.id).maybeSingle();
+  if (p && side && side !== p.role && (p.sides as Role[]).includes(side)) {
+    await supabase.from("profiles").update({ role: side }).eq("id", data.user.id);
+  }
+  redirect(safeNext(s(fd, "next") || "/app"));
+}
+
+export async function staffLogin(_: ActionResult | undefined, fd: FormData): Promise<ActionResult> {
+  if (demoMode) {
+    (await cookies()).set(DEMO_COOKIE, "admin", { path: "/", httpOnly: true, sameSite: "lax" });
+    redirect("/admin");
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email: s(fd, "email"), password: String(fd.get("password") ?? "") });
+  if (error || !data.user) return { ok: false, error: "Those staff details aren't right." };
+  const { data: p } = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
+  if (p?.role !== "admin") {
+    await supabase.auth.signOut();
+    return { ok: false, error: "This account isn't a staff account." };
+  }
+  redirect("/admin");
+}
+
+function checkPassword(fd: FormData): string | null {
+  const pw = String(fd.get("password") ?? "");
+  if (pw.length < 8) return "Password must be at least 8 characters.";
+  if (pw !== String(fd.get("confirm") ?? "")) return "Passwords don't match.";
+  return null;
+}
+
+export async function registerTalent(_: ActionResult | undefined, fd: FormData): Promise<ActionResult> {
+  if (demoMode) redirect("/demo");
+  const first_name = s(fd, "first_name"), last_name = s(fd, "last_name"), dob = s(fd, "dob");
+  if (!first_name || !last_name) return { ok: false, error: "Please enter your first and last name." };
+  if (!dob) return { ok: false, error: "Please add your date of birth." };
+  const age = (Date.now() - new Date(dob).getTime()) / (365.25 * 864e5);
+  if (age < 18) return { ok: false, error: "You must be 18 or older to join ModelClic." };
+  const pwErr = checkPassword(fd);
+  if (pwErr) return { ok: false, error: pwErr };
+
+  const supabase = await createClient();
+  const email = s(fd, "email");
   const { data, error } = await supabase.auth.signUp({
     email,
-    password,
+    password: String(fd.get("password")),
     options: {
-      // role is read by a database trigger that only accepts "host" or "talent"
-      data: { full_name, role, phone, city },
-      emailRedirectTo: `${origin}/auth/callback`,
+      data: { role: "talent", first_name, last_name, dob, gender: s(fd, "gender"), phone: s(fd, "phone") },
+      emailRedirectTo: `${await origin()}/auth/callback?next=/talent/verify`,
     },
   });
-  if (error) return { error: error.message };
-
-  if (data.session) redirect("/dashboard");
+  if (error) return { ok: false, error: error.message };
+  if (data.session) redirect("/talent/verify");
   redirect(`/check-email?email=${encodeURIComponent(email)}`);
+}
+
+export async function registerHost(_: ActionResult | undefined, fd: FormData): Promise<ActionResult> {
+  if (demoMode) redirect("/demo");
+  const first_name = s(fd, "first_name"), last_name = s(fd, "last_name");
+  if (!first_name || !last_name) return { ok: false, error: "Please enter your first and last name." };
+  const nin = s(fd, "nin");
+  if (nin && !/^\d{11}$/.test(nin)) return { ok: false, error: "NIN should be 11 digits." };
+  const pwErr = checkPassword(fd);
+  if (pwErr) return { ok: false, error: pwErr };
+
+  const supabase = await createClient();
+  const email = s(fd, "email");
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password: String(fd.get("password")),
+    options: {
+      data: {
+        role: "host", first_name, last_name, phone: s(fd, "phone"), company: s(fd, "company"),
+        registered_name: s(fd, "registered_name"), cac: s(fd, "cac"), nin, address: s(fd, "address"),
+        state: s(fd, "state"), city: s(fd, "city"),
+      },
+      emailRedirectTo: `${await origin()}/auth/callback?next=/host/verify`,
+    },
+  });
+  if (error) return { ok: false, error: error.message };
+  if (data.session) redirect("/host/verify");
+  redirect(`/check-email?email=${encodeURIComponent(email)}`);
+}
+
+/* ── Google ────────────────────────────────────────────────────── */
+
+export async function googleSignIn(fd: FormData) {
+  if (demoMode) redirect("/demo?google=1");
+  const role = s(fd, "role") === "host" ? "host" : "talent";
+  const next = safeNext(s(fd, "next") || "/app");
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${await origin()}/auth/callback?role=${role}&next=${encodeURIComponent(next)}` },
+  });
+  if (error || !data.url) redirect("/login?error=google");
+  redirect(data.url);
+}
+
+/* ── Password reset ────────────────────────────────────────────── */
+
+export async function forgotPassword(_: ActionResult | undefined, fd: FormData): Promise<ActionResult> {
+  if (demoMode) return { ok: true, message: "Demo mode — no email sent." };
+  const supabase = await createClient();
+  await supabase.auth.resetPasswordForEmail(s(fd, "email"), {
+    redirectTo: `${await origin()}/auth/callback?next=/reset-password`,
+  });
+  // Same answer whether or not the email exists.
+  return { ok: true, message: "If that email has an account, a reset link is on its way." };
+}
+
+export async function resetPassword(_: ActionResult | undefined, fd: FormData): Promise<ActionResult> {
+  const pwErr = checkPassword(fd);
+  if (pwErr) return { ok: false, error: pwErr };
+  if (demoMode) return { ok: true, message: "Demo mode — nothing changed." };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: String(fd.get("password")) });
+  if (error) return { ok: false, error: "That reset link has expired. Request a new one." };
+  redirect("/app");
 }

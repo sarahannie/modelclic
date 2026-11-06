@@ -1,9 +1,26 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { SUPABASE_ANON_KEY, SUPABASE_URL, supabaseConfigured } from "./env";
+import { DEMO_COOKIE, SUPABASE_ANON_KEY, SUPABASE_URL, demoMode, supabaseConfigured } from "./env";
+
+const PROTECTED = ["/talent", "/host", "/admin", "/messages", "/notifications", "/settings"];
+const AUTH_PAGES = ["/login", "/register"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const path = request.nextUrl.pathname;
+  const isProtected = PROTECTED.some((p) => path === p || path.startsWith(p + "/"));
+  const redirect = (to: string, keepNext = false) => {
+    const url = request.nextUrl.clone();
+    url.pathname = to;
+    url.search = keepNext ? `?next=${encodeURIComponent(path)}` : "";
+    return NextResponse.redirect(url);
+  };
+
+  if (demoMode) {
+    const signedIn = Boolean(request.cookies.get(DEMO_COOKIE)?.value);
+    if (!signedIn && isProtected) return redirect(path.startsWith("/admin") ? "/staff" : "/login", true);
+    return response;
+  }
   if (!supabaseConfigured) return response;
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -18,23 +35,11 @@ export async function updateSession(request: NextRequest) {
       },
     },
   });
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
-  if (!user && path.startsWith("/dashboard")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", path);
-    return NextResponse.redirect(url);
-  }
-  if (user && (path === "/login" || path === "/signup")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    url.search = "";
-    return NextResponse.redirect(url);
-  }
+  if (!user && isProtected) return redirect(path.startsWith("/admin") ? "/staff" : "/login", true);
+  if (user && AUTH_PAGES.some((p) => path.startsWith(p))) return redirect("/app");
   return response;
 }
