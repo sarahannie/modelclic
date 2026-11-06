@@ -25,7 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .toUpperCase();
 
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[16rem_1fr]">
+    <div className="min-h-dvh md:grid md:grid-cols-[16rem_1fr] md:bg-[linear-gradient(to_right,var(--color-ink)_16rem,transparent_16rem)]">
       <aside className="flex flex-col bg-ink p-5 text-white md:sticky md:top-0 md:h-dvh">
         <Logo dark />
         <nav className="mt-8 flex gap-1 md:flex-col" aria-label="Dashboard">
@@ -38,6 +38,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <Icon className="size-4" aria-hidden /> {label}
             </Link>
           ))}
+          <form action="/auth/signout" method="post" className="ml-auto md:hidden">
+            <button className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-white/60 hover:bg-white/10 hover:text-white">
+              <LogOut className="size-4" aria-hidden /> Sign out
+            </button>
+          </form>
         </nav>
         <div className="glass-dark mt-auto hidden rounded-2xl p-3 md:block">
           <div className="flex items-center gap-3">
