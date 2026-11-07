@@ -5,9 +5,8 @@ import type { Bid, Notification, WalletSummary } from "@/lib/types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { supabase, profile, demo } = await requireUser(["talent", "host"]);
-  const settings = await getSettings();
-
-  const [{ data: notes }, { count: unread }] = await Promise.all([
+  const [settings, { data: notes }, { count: unread }] = await Promise.all([
+    getSettings(),
     supabase.from("notifications").select("*").eq("user_id", profile.id).order("created_at", { ascending: false }).limit(6),
     supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", profile.id).eq("read", false),
   ]);

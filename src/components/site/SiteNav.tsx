@@ -28,7 +28,7 @@ export function SiteNav({ overDark = false, signedIn = false }: { overDark?: boo
   return (
     <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5">
       <nav
-        className={`mx-auto flex max-w-6xl items-center justify-between rounded-2xl py-2.5 pr-2.5 pl-3.5 transition-all duration-300 ${
+        className={`mx-auto flex max-w-6xl items-center justify-between rounded-2xl py-2.5 pr-2.5 pl-3.5 transition-colors duration-300 ${
           dark ? "border border-white/10 bg-ink/30 backdrop-blur-xl" : "glass shadow-(--shadow-soft)"
         }`}
         aria-label="Main"

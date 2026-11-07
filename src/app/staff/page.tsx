@@ -13,8 +13,8 @@ export const metadata: Metadata = { title: "Admin console", robots: { index: fal
 export default function StaffLogin() {
   return (
     <div className="grain relative isolate grid min-h-dvh place-items-center bg-ink px-4 py-10">
-      <div aria-hidden className="absolute top-[-20%] left-[-10%] -z-10 size-[40rem] rounded-full bg-ice-500/15 blur-[120px]" />
-      <div aria-hidden className="absolute right-[-10%] bottom-[-25%] -z-10 size-[36rem] rounded-full bg-vermilion/20 blur-[140px]" />
+      <div aria-hidden className="absolute top-[-20%] left-[-10%] -z-10 size-[40rem] rounded-full bg-[radial-gradient(closest-side,var(--color-ice-500),transparent)] opacity-30" />
+      <div aria-hidden className="absolute right-[-10%] bottom-[-25%] -z-10 size-[36rem] rounded-full bg-[radial-gradient(closest-side,var(--color-vermilion),transparent)] opacity-25" />
       <div className="w-full max-w-[400px]">
         <div className="mb-5"><BackLink href="/" onDark>Back to site</BackLink></div>
         <div className="rounded-[1.5rem] bg-white p-8 shadow-2xl shadow-black/40">

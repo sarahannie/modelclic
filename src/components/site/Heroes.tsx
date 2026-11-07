@@ -53,10 +53,13 @@ function SocialProof({ center = false }: { center?: boolean }) {
 export function HeroCinematic() {
   return (
     <section className="relative isolate min-h-[100svh] overflow-hidden bg-ink text-white">
-      <Image src="/images/hero.webp" alt="ModelClic event staff at a gala" fill priority sizes="100vw" className="-z-30 object-cover object-[70%_30%] lg:object-[85%_30%]" />
+      <picture>
+        <source media="(min-width: 768px)" srcSet="/images/hero.webp" />
+        <img src="/images/hero-sm.webp" alt="ModelClic event staff at a gala" fetchPriority="high" decoding="async" className="absolute inset-0 size-full -z-30 object-cover object-[70%_30%] lg:object-[85%_30%]" />
+      </picture>
       <div aria-hidden className="absolute inset-0 -z-20 bg-[linear-gradient(90deg,#0e1a2b_0%,rgb(14_26_43/0.92)_32%,rgb(14_26_43/0.45)_62%,rgb(14_26_43/0.15)_100%)]" />
       <div aria-hidden className="absolute inset-x-0 bottom-0 -z-20 h-56 bg-gradient-to-t from-ink to-transparent" />
-      <div aria-hidden className="absolute -bottom-40 -left-40 -z-10 size-[40rem] rounded-full bg-vermilion/25 blur-[150px]" />
+      <div aria-hidden className="absolute -bottom-40 -left-40 -z-10 size-[40rem] rounded-full bg-[radial-gradient(closest-side,var(--color-vermilion),transparent)] opacity-30" />
 
       <div className="mx-auto flex min-h-[100svh] max-w-6xl flex-col px-5 pt-32 pb-8 md:px-6 lg:pt-36">
         <div className="grid flex-1 items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
@@ -132,7 +135,7 @@ export function HeroCentered() {
     <section className="grain relative isolate overflow-hidden bg-ink text-white">
       <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,rgb(106_164_207/0.35),transparent_70%)]" />
       <div aria-hidden className="absolute inset-0 -z-10 opacity-[0.07] [background-image:linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] [background-size:56px_56px] [mask-image:radial-gradient(70%_60%_at_50%_30%,black,transparent)]" />
-      <div aria-hidden className="absolute -bottom-60 left-1/2 -z-10 size-[50rem] -translate-x-1/2 rounded-full bg-vermilion/20 blur-[160px]" />
+      <div aria-hidden className="absolute -bottom-60 left-1/2 -z-10 size-[50rem] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,var(--color-vermilion),transparent)] opacity-25" />
 
       <div className="mx-auto max-w-6xl px-5 pt-36 pb-20 text-center md:px-6 lg:pt-40">
         <p className="glass-dark rise mx-auto inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-ice">

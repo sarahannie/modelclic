@@ -23,7 +23,7 @@ export function SiteFooter() {
             <ul className="mt-4 space-y-2.5">
               {c.links.map(([label, href]) => (
                 <li key={href}>
-                  <Link href={href} className="text-sm font-medium text-white/75 transition hover:text-white">{label}</Link>
+                  <Link href={href} prefetch={false} className="text-sm font-medium text-white/75 transition hover:text-white">{label}</Link>
                 </li>
               ))}
             </ul>

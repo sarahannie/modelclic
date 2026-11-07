@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { BadgeCheck, LockKeyhole, ShieldAlert } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
@@ -25,10 +24,13 @@ export function AuthShell({
 }) {
   return (
     <div className="relative isolate flex min-h-dvh flex-col overflow-hidden bg-ink text-white">
-      <Image src="/images/hero.webp" alt="" fill priority sizes="100vw" className="-z-20 object-cover object-[50%_30%]" />
+      <picture>
+        <source media="(min-width: 768px)" srcSet="/images/hero.webp" />
+        <img src="/images/hero-sm.webp" alt="" fetchPriority="high" decoding="async" className="absolute inset-0 size-full -z-20 object-cover object-[50%_30%]" />
+      </picture>
       <div aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(110deg,rgb(14_26_43/0.94)_0%,rgb(14_26_43/0.78)_45%,rgb(14_26_43/0.55)_100%)]" />
-      <div aria-hidden className="absolute -bottom-40 -left-40 -z-10 size-[36rem] rounded-full bg-vermilion/25 blur-[140px]" />
-      <div aria-hidden className="absolute -top-40 right-0 -z-10 size-[30rem] rounded-full bg-ice-500/20 blur-[130px]" />
+      <div aria-hidden className="absolute -bottom-40 -left-40 -z-10 size-[36rem] rounded-full bg-[radial-gradient(closest-side,var(--color-vermilion),transparent)] opacity-30" />
+      <div aria-hidden className="absolute -top-40 right-0 -z-10 size-[30rem] rounded-full bg-[radial-gradient(closest-side,var(--color-ice-500),transparent)] opacity-25" />
 
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 pt-5 md:px-8">
         <Logo onDark />
