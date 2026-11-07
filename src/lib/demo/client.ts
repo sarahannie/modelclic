@@ -270,6 +270,7 @@ export function createDemoClient(role: Role | null) {
     rpc,
     auth: {
       getUser: async () => ({ data: { user }, error: null }),
+      getSession: async () => ({ data: { session: user ? { user } : null }, error: null }),
       signOut: async () => ({ error: null }),
       signInWithPassword: async () => ({ data: {}, error: { message: "Demo mode — use the demo buttons below." } }),
       signUp: async () => ({ data: {}, error: { message: "Demo mode — sign-up is switched off." } }),

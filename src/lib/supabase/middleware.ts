@@ -23,6 +23,10 @@ export async function updateSession(request: NextRequest) {
   }
   if (!supabaseConfigured) return response;
 
+  // No Supabase auth cookie → logged-out visitor: skip the network check entirely.
+  const hasAuthCookie = request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
+  if (!hasAuthCookie) return isProtected ? redirect(path.startsWith("/admin") ? "/staff" : "/login", true) : response;
+
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     cookies: {
       getAll() {

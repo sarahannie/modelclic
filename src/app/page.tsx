@@ -1,13 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowRight, BadgeCheck, Check, ChevronDown, ShieldAlert, Sparkles, Star, Target, Ticket, Users, Wallet,
+  ArrowRight, BadgeCheck, Check, ChevronDown, ShieldAlert, Star, Target, Ticket,
 } from "lucide-react";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { EventCard } from "@/components/ui/EventCard";
 import { HowItWorks } from "@/components/site/HowItWorks";
-import { getSession } from "@/lib/session";
+import { HeroCinematic } from "@/components/site/Heroes";
+import { cookies } from "next/headers";
+import { getUpcomingJobs } from "@/lib/publicData";
+import { DEMO_COOKIE } from "@/lib/supabase/env";
 import { FAQ } from "@/lib/constants";
 import type { MCEvent } from "@/lib/types";
 
@@ -16,122 +19,16 @@ export const dynamic = "force-dynamic";
 const EVENTS = ["Weddings", "Owambe parties", "Brand activations", "Corporate conferences", "Concerts", "Product launches", "Fashion shows", "Church events", "Trade fairs", "Award nights", "Hotel shifts", "Festivals", "Campus events", "Photoshoots", "Charity galas"];
 
 export default async function Home() {
-  const { supabase, user } = await getSession();
-  let jobs: MCEvent[] = [];
-  try {
-    const { data } = await supabase.from("events").select("*").eq("status", "active").gte("starts_at", new Date().toISOString()).order("starts_at").limit(3);
-    jobs = (data as MCEvent[]) ?? [];
-  } catch {}
+  // Signed-in check from the cookie only (no database call); jobs come from a 60s cache.
+  const jar = await cookies();
+  const signedIn = jar.getAll().some((c) => (c.name.startsWith("sb-") && c.name.includes("auth-token")) || c.name === DEMO_COOKIE);
+  const jobs: MCEvent[] = await getUpcomingJobs();
 
   return (
     <>
-      <SiteNav overDark signedIn={Boolean(user)} />
+      <SiteNav overDark signedIn={signedIn} />
 
-      {/* ═══ Hero ═══════════════════════════════════════════════════════ */}
-      <section className="grain relative isolate overflow-hidden bg-ink text-white">
-        <div aria-hidden className="absolute -top-48 -left-32 -z-10 size-[44rem] rounded-full bg-ice-500/20 blur-[130px]" />
-        <div aria-hidden className="absolute right-[-15%] bottom-[-35%] -z-10 size-[40rem] rounded-full bg-vermilion/25 blur-[150px]" />
-
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-32 pb-20 md:px-6 lg:grid-cols-[1.08fr_1fr] lg:pt-40 lg:pb-28">
-          <div className="rise">
-            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1.5 text-[13px] font-semibold text-ice backdrop-blur">
-              <span className="relative flex size-2"><span className="absolute inset-0 animate-ping rounded-full bg-vermilion/70" /><span className="relative size-2 rounded-full bg-vermilion" /></span>
-              Live in Lagos, Abuja and Port Harcourt
-            </p>
-            <h1 className="t-display mt-6 text-white">
-              Event work that’s <span className="text-ice-300">safe</span>, <span className="text-ice-300">verified</span> and{" "}
-              <span className="relative whitespace-nowrap">
-                paid on time
-                <svg aria-hidden viewBox="0 0 300 12" className="absolute -bottom-2 left-0 w-full" preserveAspectRatio="none"><path d="M2 9 C 80 2, 220 2, 298 8" stroke="#e34234" strokeWidth="5" fill="none" strokeLinecap="round" /></svg>
-              </span>
-              .
-            </h1>
-            <div className="mt-10 flex flex-wrap items-center gap-3">
-              <Link
-                href="/register/talent"
-                className="group inline-flex h-[60px] items-center gap-3 rounded-full bg-vermilion-600 py-2 pr-6 pl-2 text-[17px] font-bold text-white shadow-(--shadow-cta) ring-1 ring-white/20 transition hover:-translate-y-0.5 hover:bg-vermilion-700 active:translate-y-0"
-              >
-                <span className="grid size-11 place-items-center rounded-full bg-white/15 ring-1 ring-white/25"><Sparkles className="size-5" aria-hidden /></span>
-                Talent
-                <ArrowRight className="size-5 transition group-hover:translate-x-1" aria-hidden />
-              </Link>
-              <Link
-                href="/register/host"
-                className="group inline-flex h-[60px] items-center gap-3 rounded-full border border-white/25 bg-white/[0.08] py-2 pr-6 pl-2 text-[17px] font-bold text-white backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white hover:text-ink active:translate-y-0"
-              >
-                <span className="grid size-11 place-items-center rounded-full bg-white/10 ring-1 ring-white/20 transition group-hover:bg-ink group-hover:text-white"><Users className="size-5" aria-hidden /></span>
-                Host
-                <ArrowRight className="size-5 transition group-hover:translate-x-1" aria-hidden />
-              </Link>
-            </div>
-
-            <ul className="mt-8 flex flex-wrap gap-2 text-[13px] font-semibold text-white/80">
-              {["NIN-verified", "Escrow pay", "SOS on every shift"].map((t) => (
-                <li key={t} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 backdrop-blur"><Check className="size-3.5 text-vermilion" aria-hidden /> {t}</li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Photo + glass cards */}
-          <div className="rise relative mx-auto w-full max-w-[520px] [animation-delay:120ms]">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] shadow-2xl shadow-black/50 ring-1 ring-white/10">
-              <Image src="/images/hero.webp" alt="ModelClic event staff in uniform at a gala" fill priority sizes="(max-width: 1024px) 90vw, 520px" className="object-cover" />
-              <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-ink/10" />
-            </div>
-
-            <div aria-hidden className="glass float absolute top-[8%] -left-4 w-[62%] rounded-2xl p-4 text-ink shadow-(--shadow-lift) sm:-left-10">
-              <div className="flex items-center justify-between">
-                <span className="badge badge-ice">Wedding ushering</span>
-                <span className="text-xs font-semibold text-ink-500">Victoria Island</span>
-              </div>
-              <p className="mt-2.5 font-bold leading-snug">Wedding ushers — Oriental Hotel</p>
-              <p className="text-xs text-ink-500">Sat · 2:00 PM</p>
-              <div className="mt-3 flex items-center justify-between">
-                <span className="num text-2xl font-extrabold tracking-tight">₦25,000</span>
-                <span className="badge badge-ink">Bid · 3 pts</span>
-              </div>
-            </div>
-
-            <div aria-hidden className="glass absolute top-[46%] -right-3 flex items-center gap-3 rounded-2xl px-4 py-3 text-ink shadow-(--shadow-lift) [animation-delay:1.5s] float sm:-right-8">
-              <span className="grid size-10 place-items-center rounded-full bg-ink text-white"><Wallet className="size-4" /></span>
-              <div>
-                <p className="num text-sm font-extrabold">₦25,000 released</p>
-                <p className="text-xs text-ink-500">From escrow · just now</p>
-              </div>
-            </div>
-
-            <div aria-hidden className="glass absolute bottom-[7%] left-[6%] w-[64%] rounded-2xl p-4 text-ink shadow-(--shadow-lift)">
-              <div className="flex items-center gap-3">
-                <span className="grid size-10 place-items-center rounded-full bg-ice font-bold text-ink">AO</span>
-                <div>
-                  <p className="font-bold">Ada Okafor</p>
-                  <p className="flex items-center gap-1 text-xs font-semibold text-vermilion-700"><BadgeCheck className="size-3.5" /> Identity verified</p>
-                </div>
-              </div>
-              <div className="mt-3 flex gap-1.5">
-                {["NIN", "Selfie", "Liveness"].map((c) => <span key={c} className="badge badge-line">{c}</span>)}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="border-t border-white/10 bg-white/[0.03]">
-          <dl className="mx-auto grid max-w-6xl grid-cols-2 md:grid-cols-4">
-            {[
-              ["₦0", "fees for talent — keep 100% of your pay"],
-              ["20", "free bid points every month"],
-              ["12 h", "automatic pay release after the event"],
-              ["2 min", "safety response target on SOS"],
-            ].map(([big, small], i) => (
-              <div key={big} className={`px-5 py-7 md:px-6 ${i ? "md:border-l" : ""} ${i % 2 ? "border-l" : ""} border-white/10 ${i > 1 ? "border-t md:border-t-0" : ""}`}>
-                <dt className="num text-3xl font-extrabold tracking-[-0.04em] md:text-4xl">{big}</dt>
-                <dd className="mt-1 text-[13px] text-white/60">{small}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
+      <HeroCinematic />
 
       {/* Marquee */}
       <div className="overflow-hidden border-b border-line bg-white py-5" aria-label="Events we staff">

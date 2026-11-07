@@ -3,7 +3,7 @@ import { requireUser, getPrivate } from "@/lib/session";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Toggle } from "@/components/ui/kit";
-import { updatePrivacy } from "@/app/actions/account";
+import { requestAccountDeletion, updatePrivacy } from "@/app/actions/account";
 
 export const metadata: Metadata = { title: "Privacy & safety" };
 
@@ -29,6 +29,26 @@ export default async function PrivacySettings() {
         </section>
         <div className="flex justify-end"><SubmitButton className="btn btn-ink" pendingLabel="Saving…">Save</SubmitButton></div>
       </ActionForm>
+
+      <section className="card card-pad mt-8">
+        <h2 className="t-h3">How long we keep your data</h2>
+        <ul className="mt-3 space-y-2 text-sm text-ink-600">
+          <li><strong className="text-ink">Account &amp; profile:</strong> while your account is open; deleted within 30 days of closing it.</li>
+          <li><strong className="text-ink">ID photo, selfie &amp; face scan:</strong> deleted 90 days after verification. Only the pass/fail result is kept.</li>
+          <li><strong className="text-ink">Payments &amp; transaction records:</strong> 6 years, as Nigerian financial law requires.</li>
+        </ul>
+        <p className="mt-3 text-xs text-ink-400">To see, correct or export your data, email privacy@modelclic.com — we reply within 30 days.</p>
+      </section>
+
+      <section className="card card-pad mt-5 border-vermilion-100">
+        <h2 className="t-h3 text-vermilion-700">Withdraw consent &amp; delete my account</h2>
+        <p className="t-small mt-1">This closes your account and deletes your personal data within 30 days. Payment records are kept for 6 years by law. Pay owed to you for completed work is still paid out.</p>
+        <ActionForm action={requestAccountDeletion} className="mt-4 grid gap-3 sm:grid-cols-[1fr_180px_auto] sm:items-end">
+          <div><label className="label" htmlFor="reason">Reason <span className="font-normal text-ink-400">(optional)</span></label><input id="reason" name="reason" className="field" /></div>
+          <div><label className="label" htmlFor="confirm">Type DELETE</label><input id="confirm" name="confirm" autoComplete="off" className="field" /></div>
+          <SubmitButton className="btn btn-danger" pendingLabel="Sending…">Delete my account</SubmitButton>
+        </ActionForm>
+      </section>
     </>
   );
 }

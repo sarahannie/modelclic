@@ -11,10 +11,19 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // New Google users who chose "Event Host" start on the host side.
+      // New Google users who chose "Host" start on the host side.
       if (role === "host") await supabase.rpc("set_initial_role", { p_role: "host" });
+      const user = data.user;
+      if (user && !user.user_metadata?.consent_at) {
+        if (searchParams.get("consent") === "1") {
+          await supabase.auth.updateUser({ data: { consent_at: new Date().toISOString(), consent_version: "2026-11-06" } });
+        } else {
+          // Signed up with Google without ticking consent (e.g. from the login page) → ask first.
+          return NextResponse.redirect(`${origin}/consent?next=${encodeURIComponent(next)}`);
+        }
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

@@ -9,12 +9,23 @@ export const homeFor = (role: Role) => (role === "admin" ? "/admin" : role === "
 /** Current user + profile (cached per request). */
 export const getSession = cache(async () => {
   const supabase = await createClient();
+  // Read the user id from the cookie (no network), then verify the user and load the
+  // profile in parallel instead of one after the other.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const guessId = session?.user?.id;
+  const [{ data: { user } }, early] = await Promise.all([
+    supabase.auth.getUser(),
+    guessId ? supabase.from("profiles").select("*").eq("id", guessId).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
   if (!user) return { supabase, user: null, profile: null, demo: demoMode };
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-  return { supabase, user, profile: profile as Profile | null, demo: demoMode };
+  let profile = early.data as Profile | null;
+  if (!profile || profile.id !== user.id) {
+    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+    profile = data as Profile | null;
+  }
+  return { supabase, user, profile, demo: demoMode };
 });
 
 /** Require a signed-in user, optionally with a specific active role. */

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getSession, homeFor } from "@/lib/session";
+import { getSession, homeFor, requireUser } from "@/lib/session";
 import type { ActionResult } from "./rpc";
 import type { Role } from "@/lib/types";
 
@@ -165,4 +165,19 @@ export async function sendMessage(_: ActionResult | undefined, fd: FormData): Pr
   if (error) return fail(error.message);
   revalidatePath("/messages", "layout");
   return { ok: true };
+}
+
+/** Withdraw consent / request deletion (NDPA). Logged as a support ticket; staff complete it within 30 days. */
+export async function requestAccountDeletion(_: ActionResult | undefined, fd: FormData): Promise<ActionResult> {
+  const { supabase, profile } = await requireUser(["talent", "host"]);
+  if (String(fd.get("confirm") ?? "").trim().toUpperCase() !== "DELETE") return { ok: false, error: "Type DELETE to confirm." };
+  const reason = String(fd.get("reason") ?? "").trim().slice(0, 500);
+  const { error } = await supabase.from("tickets").insert({
+    user_id: profile.id,
+    subject: "Account deletion & consent withdrawal",
+    body: `Please delete my account and personal data.${reason ? `\n\nReason: ${reason}` : ""}`,
+  });
+  if (error) return { ok: false, error: "Couldn't send the request. Please email privacy@modelclic.com." };
+  await supabase.auth.updateUser({ data: { consent_withdrawn_at: new Date().toISOString() } });
+  return { ok: true, message: "Request received. Your account will be deleted within 30 days." };
 }

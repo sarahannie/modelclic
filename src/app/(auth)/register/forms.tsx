@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { Clock, ShieldCheck } from "lucide-react";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Field } from "@/components/ui/kit";
@@ -9,21 +11,57 @@ import { PasswordInput } from "../login/LoginForm";
 import { GoogleButton } from "../GoogleButton";
 import { registerHost, registerTalent } from "../actions";
 
-function Agree() {
+export const CONSENT_VERSION = "2026-11-06";
+
+const RETENTION: [string, string][] = [
+  ["Account & profile", "While your account is open; deleted within 30 days of closing it"],
+  ["ID photo, selfie & face scan", "Deleted 90 days after verification (only the pass/fail result is kept)"],
+  ["Payments & transaction records", "6 years, as Nigerian financial law requires"],
+];
+
+const legal = "font-semibold text-ink underline decoration-ice-400 underline-offset-2";
+
+/** Explicit consent + plain-language retention periods (NDPA 2023). Required before any sign-up. */
+export function ConsentBlock({ agreed, onChange }: { agreed: boolean; onChange: (v: boolean) => void }) {
   return (
-    <p className="text-[13px] leading-relaxed text-ink-500">
-      By creating an account you agree to ModelClic&rsquo;s{" "}
-      <Link href="/legal/terms" className="font-semibold text-ink underline decoration-ice-400 underline-offset-2">Terms of Service</Link>,{" "}
-      <Link href="/legal/guidelines" className="font-semibold text-ink underline decoration-ice-400 underline-offset-2">Community Guidelines</Link> and{" "}
-      <Link href="/legal/privacy" className="font-semibold text-ink underline decoration-ice-400 underline-offset-2">Privacy Policy</Link>.
-    </p>
+    <section aria-labelledby="consent-title" className="rounded-2xl border border-line bg-ice-50/80 p-4">
+      <p id="consent-title" className="flex items-center gap-2 text-sm font-bold">
+        <ShieldCheck className="size-4 text-vermilion-700" aria-hidden /> Your data &amp; consent
+      </p>
+      <p className="mt-1 text-[13px] text-ink-500">We use your details to verify you, run bookings and payments, and keep everyone safe. We never sell your data.</p>
+      <ul className="mt-3 divide-y divide-line-soft rounded-xl border border-line-soft bg-white text-[13px]">
+        {RETENTION.map(([what, how]) => (
+          <li key={what} className="flex gap-3 px-3 py-2.5">
+            <Clock className="mt-0.5 size-3.5 shrink-0 text-ink-400" aria-hidden />
+            <span><strong className="font-semibold text-ink">{what}:</strong> <span className="text-ink-600">{how}</span></span>
+          </li>
+        ))}
+      </ul>
+      <label className="mt-3 flex cursor-pointer items-start gap-3 text-[13px] leading-relaxed text-ink-700">
+        <input
+          type="checkbox"
+          name="consent"
+          value="1"
+          required
+          checked={agreed}
+          onChange={(e) => onChange(e.target.checked)}
+          className="mt-0.5 size-[18px] shrink-0 accent-[#0e1a2b]"
+        />
+        <span>
+          I agree to the <Link href="/legal/terms" target="_blank" className={legal}>Terms</Link>,{" "}
+          <Link href="/legal/guidelines" target="_blank" className={legal}>Community Guidelines</Link> and{" "}
+          <Link href="/legal/privacy" target="_blank" className={legal}>Privacy Policy</Link>, and I consent to ModelClic processing my
+          personal data as described above. I can withdraw consent or delete my account at any time in Settings.
+        </span>
+      </label>
+    </section>
   );
 }
 
 function Or() {
   return (
-    <div className="my-6 flex items-center gap-3 text-xs font-semibold text-ink-300">
-      <span className="h-px flex-1 bg-line-soft" />or sign up with email<span className="h-px flex-1 bg-line-soft" />
+    <div className="my-5 flex items-center gap-3 text-xs font-semibold text-ink-300">
+      <span className="h-px flex-1 bg-line-soft" />or<span className="h-px flex-1 bg-line-soft" />
     </div>
   );
 }
@@ -35,10 +73,9 @@ const maxDob = () => {
 };
 
 export function TalentRegisterForm() {
+  const [agreed, setAgreed] = useState(false);
   return (
     <>
-      <GoogleButton role="talent" next="/talent/verify" label="Sign up with Google" />
-      <Or />
       <ActionForm action={registerTalent} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="First name" htmlFor="first_name"><input id="first_name" name="first_name" required autoComplete="given-name" className="field" /></Field>
@@ -59,18 +96,21 @@ export function TalentRegisterForm() {
           <Field label="Password" htmlFor="password"><PasswordInput autoComplete="new-password" /></Field>
           <Field label="Confirm password" htmlFor="confirm"><PasswordInput name="confirm" autoComplete="new-password" /></Field>
         </div>
-        <Agree />
-        <SubmitButton className="btn btn-ink btn-lg w-full" pendingLabel="Creating account…">Create account</SubmitButton>
+        <ConsentBlock agreed={agreed} onChange={setAgreed} />
+        <input type="hidden" name="consent_version" value={CONSENT_VERSION} />
+        <SubmitButton className="btn btn-ink btn-lg w-full" pendingLabel="Creating account…" disabled={!agreed}>Create account</SubmitButton>
       </ActionForm>
+      <Or />
+      <GoogleButton role="talent" next="/talent/verify" label="Sign up with Google" consent={agreed} disabled={!agreed} />
+      {!agreed && <p className="mt-2 text-center text-xs text-ink-400">Tick the consent box above to continue.</p>}
     </>
   );
 }
 
 export function HostRegisterForm() {
+  const [agreed, setAgreed] = useState(false);
   return (
     <>
-      <GoogleButton role="host" next="/host/verify" label="Sign up with Google" />
-      <Or />
       <ActionForm action={registerHost} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="First name" htmlFor="first_name"><input id="first_name" name="first_name" required autoComplete="given-name" className="field" /></Field>
@@ -104,9 +144,13 @@ export function HostRegisterForm() {
           <Field label="Password" htmlFor="password"><PasswordInput autoComplete="new-password" /></Field>
           <Field label="Confirm password" htmlFor="confirm"><PasswordInput name="confirm" autoComplete="new-password" /></Field>
         </div>
-        <Agree />
-        <SubmitButton className="btn btn-ink btn-lg w-full" pendingLabel="Creating account…">Create host account</SubmitButton>
+        <ConsentBlock agreed={agreed} onChange={setAgreed} />
+        <input type="hidden" name="consent_version" value={CONSENT_VERSION} />
+        <SubmitButton className="btn btn-ink btn-lg w-full" pendingLabel="Creating account…" disabled={!agreed}>Create host account</SubmitButton>
       </ActionForm>
+      <Or />
+      <GoogleButton role="host" next="/host/verify" label="Sign up with Google" consent={agreed} disabled={!agreed} />
+      {!agreed && <p className="mt-2 text-center text-xs text-ink-400">Tick the consent box above to continue.</p>}
     </>
   );
 }

@@ -63,6 +63,12 @@ export async function staffLogin(_: ActionResult | undefined, fd: FormData): Pro
   redirect("/admin");
 }
 
+const CONSENT_ERR = "Please tick the consent box to create your account.";
+const consentMeta = (fd: FormData) => ({
+  consent_at: new Date().toISOString(),
+  consent_version: s(fd, "consent_version") || "2026-11-06",
+});
+
 function checkPassword(fd: FormData): string | null {
   const pw = String(fd.get("password") ?? "");
   if (pw.length < 8) return "Password must be at least 8 characters.";
@@ -79,6 +85,7 @@ export async function registerTalent(_: ActionResult | undefined, fd: FormData):
   if (age < 18) return { ok: false, error: "You must be 18 or older to join ModelClic." };
   const pwErr = checkPassword(fd);
   if (pwErr) return { ok: false, error: pwErr };
+  if (fd.get("consent") !== "1") return { ok: false, error: CONSENT_ERR };
 
   const supabase = await createClient();
   const email = s(fd, "email");
@@ -86,7 +93,7 @@ export async function registerTalent(_: ActionResult | undefined, fd: FormData):
     email,
     password: String(fd.get("password")),
     options: {
-      data: { role: "talent", first_name, last_name, dob, gender: s(fd, "gender"), phone: s(fd, "phone") },
+      data: { role: "talent", first_name, last_name, dob, gender: s(fd, "gender"), phone: s(fd, "phone"), ...consentMeta(fd) },
       emailRedirectTo: `${await origin()}/auth/callback?next=/talent/verify`,
     },
   });
@@ -103,6 +110,7 @@ export async function registerHost(_: ActionResult | undefined, fd: FormData): P
   if (nin && !/^\d{11}$/.test(nin)) return { ok: false, error: "NIN should be 11 digits." };
   const pwErr = checkPassword(fd);
   if (pwErr) return { ok: false, error: pwErr };
+  if (fd.get("consent") !== "1") return { ok: false, error: CONSENT_ERR };
 
   const supabase = await createClient();
   const email = s(fd, "email");
@@ -111,6 +119,7 @@ export async function registerHost(_: ActionResult | undefined, fd: FormData): P
     password: String(fd.get("password")),
     options: {
       data: {
+        ...consentMeta(fd),
         role: "host", first_name, last_name, phone: s(fd, "phone"), company: s(fd, "company"),
         registered_name: s(fd, "registered_name"), cac: s(fd, "cac"), nin, address: s(fd, "address"),
         state: s(fd, "state"), city: s(fd, "city"),
@@ -132,7 +141,9 @@ export async function googleSignIn(fd: FormData) {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: `${await origin()}/auth/callback?role=${role}&next=${encodeURIComponent(next)}` },
+    options: {
+      redirectTo: `${await origin()}/auth/callback?role=${role}&next=${encodeURIComponent(next)}${fd.get("consent") === "1" ? "&consent=1" : ""}`,
+    },
   });
   if (error || !data.url) redirect("/login?error=google");
   redirect(data.url);
@@ -158,4 +169,24 @@ export async function resetPassword(_: ActionResult | undefined, fd: FormData): 
   const { error } = await supabase.auth.updateUser({ password: String(fd.get("password")) });
   if (error) return { ok: false, error: "That reset link has expired. Request a new one." };
   redirect("/app");
+}
+
+/* ── Consent (for new Google accounts that haven't given it yet) ── */
+
+export async function recordConsent(_: ActionResult | undefined, fd: FormData): Promise<ActionResult> {
+  if (fd.get("consent") !== "1") return { ok: false, error: "Please tick the consent box to continue." };
+  if (demoMode) redirect(safeNext(s(fd, "next") || "/app"));
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ data: consentMeta(fd) });
+  if (error) return { ok: false, error: "Couldn't save that. Please try again." };
+  redirect(safeNext(s(fd, "next") || "/app"));
+}
+
+export async function declineConsent() {
+  // No consent → no account. Sign out; an admin can remove the empty account on request.
+  if (!demoMode) {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  }
+  redirect("/?consent=declined");
 }

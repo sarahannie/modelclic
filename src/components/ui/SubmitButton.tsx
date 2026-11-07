@@ -9,16 +9,18 @@ export function SubmitButton({
   pendingLabel,
   name,
   value,
+  disabled = false,
 }: {
   children: React.ReactNode;
   className?: string;
   pendingLabel?: string;
   name?: string;
   value?: string;
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" name={name} value={value} className={className} disabled={pending} aria-busy={pending}>
+    <button type="submit" name={name} value={value} className={className} disabled={pending || disabled} aria-busy={pending}>
       {pending ? (
         <>
           <Loader2 className="size-4 animate-spin" aria-hidden /> {pendingLabel ?? "Please wait…"}

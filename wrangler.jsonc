@@ -11,5 +11,7 @@
   "services": [
     { "binding": "WORKER_SELF_REFERENCE", "service": "modelclic" }
   ],
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Run server code next to the Supabase database (Paris, eu-west-3)
+  "placement": { "mode": "targeted", "region": "aws:eu-west-3" }
 }

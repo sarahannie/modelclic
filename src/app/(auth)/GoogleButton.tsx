@@ -13,12 +13,13 @@ function GoogleG() {
 }
 
 /** Sign in / sign up with Google. The role is kept so new Google users land on the right side. */
-export function GoogleButton({ role, next = "/app", label }: { role: "talent" | "host"; next?: string; label: string }) {
+export function GoogleButton({ role, next = "/app", label, consent = false, disabled = false }: { role: "talent" | "host"; next?: string; label: string; consent?: boolean; disabled?: boolean }) {
   return (
     <form action={googleSignIn}>
       <input type="hidden" name="role" value={role} />
       <input type="hidden" name="next" value={next} />
-      <SubmitButton className="btn btn-secondary btn-lg w-full" pendingLabel="Opening Google…">
+      {consent && <input type="hidden" name="consent" value="1" />}
+      <SubmitButton className="btn btn-secondary btn-lg w-full" pendingLabel="Opening Google…" disabled={disabled}>
         <GoogleG /> {label}
       </SubmitButton>
     </form>
