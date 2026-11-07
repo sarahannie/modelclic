@@ -1,5 +1,20 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import { googleSignIn } from "./actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+
+const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+
+type GoogleId = {
+  initialize: (o: Record<string, unknown>) => void;
+  renderButton: (el: HTMLElement, o: Record<string, unknown>) => void;
+};
+declare global {
+  interface Window {
+    google?: { accounts: { id: GoogleId } };
+  }
+}
 
 function GoogleG() {
   return (
@@ -12,8 +27,8 @@ function GoogleG() {
   );
 }
 
-/** Sign in / sign up with Google. The role is kept so new Google users land on the right side. */
-export function GoogleButton({ role, next = "/app", label, consent = false, disabled = false }: { role: "talent" | "host"; next?: string; label: string; consent?: boolean; disabled?: boolean }) {
+/** Old redirect flow — used in demo mode or if Google's script can't load. */
+function FallbackButton({ role, next, label, consent, disabled }: Props) {
   return (
     <form action={googleSignIn}>
       <input type="hidden" name="role" value={role} />
@@ -23,5 +38,112 @@ export function GoogleButton({ role, next = "/app", label, consent = false, disa
         <GoogleG /> {label}
       </SubmitButton>
     </form>
+  );
+}
+
+let scriptPromise: Promise<void> | null = null;
+function loadGis() {
+  if (window.google?.accounts?.id) return Promise.resolve();
+  scriptPromise ??= new Promise<void>((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client";
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => {
+      scriptPromise = null;
+      reject(new Error("gis"));
+    };
+    document.head.appendChild(s);
+  });
+  return scriptPromise;
+}
+
+async function sha256Hex(text: string) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+type Props = { role: "talent" | "host"; next?: string; label: string; consent?: boolean; disabled?: boolean };
+
+/**
+ * Sign in / sign up with Google using Google's own button, so the Google screen says
+ * "Sign in to modelclic.com". The role and consent travel with the request.
+ */
+export function GoogleButton({ role, next = "/app", label, consent = false, disabled = false }: Props) {
+  const box = useRef<HTMLDivElement>(null);
+  const latest = useRef({ role, next, consent });
+  latest.current = { role, next, consent };
+  const [mode, setMode] = useState<"loading" | "google" | "fallback">(CLIENT_ID ? "loading" : "fallback");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!CLIENT_ID) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await loadGis();
+        const raw = crypto.randomUUID() + crypto.randomUUID();
+        const hashed = await sha256Hex(raw);
+        if (cancelled || !box.current || !window.google) return;
+        window.google.accounts.id.initialize({
+          client_id: CLIENT_ID,
+          nonce: hashed,
+          ux_mode: "popup",
+          context: "signin",
+          callback: async ({ credential }: { credential: string }) => {
+            setBusy(true);
+            setError(null);
+            try {
+              const res = await fetch("/auth/google", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ credential, nonce: raw, ...latest.current, consent: latest.current.consent ? "1" : "" }),
+              });
+              const out = await res.json();
+              if (!res.ok || !out.redirect) throw new Error(out.error || "failed");
+              window.location.assign(out.redirect);
+            } catch (e) {
+              setBusy(false);
+              setError(e instanceof Error && e.message !== "failed" ? e.message : "Google sign-in didn't complete. Please try again.");
+            }
+          },
+        });
+        const width = Math.min(400, Math.max(200, Math.round(box.current.getBoundingClientRect().width)));
+        window.google.accounts.id.renderButton(box.current, {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          shape: "pill",
+          text: "continue_with",
+          logo_alignment: "center",
+          width,
+        });
+        setMode("google");
+      } catch {
+        if (!cancelled) setMode("fallback");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (mode === "fallback") return <FallbackButton role={role} next={next} label={label} consent={consent} disabled={disabled} />;
+
+  return (
+    <div>
+      <div className={`relative flex min-h-[44px] justify-center ${disabled || busy ? "opacity-50" : ""}`}>
+        <div ref={box} className="flex w-full justify-center" />
+        {mode === "loading" && (
+          <div className="btn btn-secondary btn-lg pointer-events-none absolute inset-0 w-full">
+            <GoogleG /> {label}
+          </div>
+        )}
+        {(disabled || busy) && <div className="absolute inset-0 cursor-not-allowed" aria-hidden />}
+      </div>
+      {busy && <p className="mt-2 text-center text-xs text-ink-500">Signing you in…</p>}
+      {error && <p role="alert" className="mt-2 text-center text-xs font-medium text-vermilion-700">{error}</p>}
+    </div>
   );
 }
